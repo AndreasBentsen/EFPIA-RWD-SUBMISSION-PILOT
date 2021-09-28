@@ -9,8 +9,11 @@ pip3 install --user virtualenv-20.8.1-py.py3-none-any.whl
 Dependencies:
 
 platformdirs-2.4.0-py3-none-any.whl
+
 six-1.16.0-py2.py3-none-any.whl
+
 backports.entry_points_selectable-1.1.0-py2.py3-none-any.whl
+
 importlib_metadata-4.8.1-py3-none-any.whl
 zipp-3.5.0-py3-none-any.whl
 typing_extensions-3.10.0.2-py3-none-any.whl
