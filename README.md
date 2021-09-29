@@ -1,4 +1,6 @@
 # EFPIA-RWD-SUBMISSION-PILOT
+# Vocabularies
+
 
 # Setup virtual python 2.7 environment for conversion of SynPUF data to OMOP on CentOS platform
 
