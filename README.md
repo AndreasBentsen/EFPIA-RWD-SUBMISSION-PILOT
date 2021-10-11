@@ -12,13 +12,13 @@ Dependencies:
 
 platformdirs-2.4.0-py3-none-any.whl <br /> 
 six-1.16.0-py2.py3-none-any.whl <br />
-backports.entry_points_selectable-1.1.0-py2.py3-none-any.whl <br />
-importlib_metadata-4.8.1-py3-none-any.whl <br />
 zipp-3.5.0-py3-none-any.whl <br />
 typing_extensions-3.10.0.2-py3-none-any.whl <br />
 distlib-0.3.3-py2.py3-none-any.whl <br />
 filelock-3.1.0-py2.py3-none-any.whl <br />
 importlib_resources-5.2.2-py3-none-any.whl <br />
+backports.entry_points_selectable-1.1.0-py2.py3-none-any.whl <br />
+importlib_metadata-4.8.1-py3-none-any.whl <br />
 
 2. Create a project folder and activate the virtual environment:
 
