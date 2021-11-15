@@ -1,0 +1,71 @@
+
+R version 4.1.2 (2021-11-01) -- "Bird Hippie"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> if (!require(DatabaseConnector)) install.packages("DatabaseConnector")
+Loading required package: DatabaseConnector
+> if (!require(SqlRender)) install.packages("SqlRender")
+Loading required package: SqlRender
+> if (!require(readr)) install.packages("readr")
+Loading required package: readr
+> 
+> downloadJdbcDrivers(
++   dbms = "postgresql",
++   pathToDriver = Sys.getenv("pathToDriver"),
++   method = "auto"
++ )
+Consider adding `DATABASECONNECTOR_JAR_FOLDER='/jdbc_driver_folder'` to /root/.Renviron and restarting R.
+trying URL 'https://ohdsi.github.io/DatabaseConnectorJars/postgresqlV42.2.18.zip'
+Content type 'application/zip' length 931791 bytes (909 KB)
+==================================================
+downloaded 909 KB
+
+DatabaseConnector JDBC drivers downloaded to '/jdbc_driver_folder'.
+> 
+> message("Downloaded JDBC Drivers...")
+Downloaded JDBC Drivers...
+> connectionDetails <- createConnectionDetails(dbms = "postgresql", pathToDriver=Sys.getenv("pathToDriver"),
++                                              server = paste(pathToDriver=Sys.getenv("postgresServer"), Sys.getenv("postgresDatabase"), sep = "/"),
++                                              user = Sys.getenv("postgresUser"),
++                                              password = Sys.getenv("postgresPassword"),
++                                              port = Sys.getenv("postgresPort"))
+> 
+> message("Connection Object...")
+Connection Object...
+> 
+> # Use bulk upload? Will be much faster, but requires POSTGRES_PATH variable set to folder containing pg.exe:
+> bulkLoad <- FALSE # need to fix ubuntu postgres TODO
+> 
+> # Schema where the CDM data should be uploaded:
+> cdmDatabaseSchema <- Sys.getenv("cdmDatabaseSchema")
+> # Local folder containing the vocabulary used in the ETL:
+> vocabFolder <- Sys.getenv("vocabFolder")
+> 
+> # Local folder containing the ETL-ed data. Data is expected to be in CSV files, with names corresponding to 
+> # the CDM table names. Number prefixes will be ignored. E.g. 'care_site_1.csv will be loaded into the 'case_site' table.
+> cdmFolder <- Sys.getenv("cdmFolder")
+> 
+> # Maximum number of rows that will be loaded into memory before writing to the database:
+> batchSize <- 1e7
+> 
+> 
+> 
+> connection <- connect(connectionDetails)
+Connecting using PostgreSQL driver
+Error in rJava::.jcall(jdbcDriver, "Ljava/sql/Connection;", "connect",  : 
+  org.postgresql.util.PSQLException: Connection to 172.17.0.2:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+Calls: connect ... connect -> connectUsingJdbcDriver -> <Anonymous> -> .jcheck
+Execution halted
