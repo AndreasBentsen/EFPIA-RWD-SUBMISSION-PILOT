@@ -1,0 +1,52 @@
+version: "3.9"
+services:
+    postgres:
+        container_name: rwe_postgres
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: rwe
+            POSTGRES_USER: rwe
+            POSTGRES_DB: rwe
+        volumes:
+            - /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT
+        ports:
+            - "5432:5432"
+        expose:
+            - "5432"
+        networks:
+            - rwe_network
+    pgadmin:
+        container_name: pgadmin4_container
+        image: dpage/pgadmin4
+        restart: always
+        environment:
+            PGADMIN_DEFAULT_EMAIL: rwe@rwe.com
+            PGADMIN_DEFAULT_PASSWORD: rwe
+        ports:
+            - "5050:80"
+        volumes:
+            - /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT
+        depends_on:
+            - postgres
+        networks:
+            - rwe_network
+    etlcms:
+        container_name: rwe_etlcms
+        #restart: always
+        build: 
+            context: ./
+            dockerfile: etl_cms/Dockerfile
+        ports:
+            - "8050:8050"
+        volumes:
+            - /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT
+        depends_on:
+            - postgres
+        networks:
+            - rwe_network
+        entrypoint: sh /EFPIA-RWD-SUBMISSION-PILOT/Docker/etl_cms/entrypoint.sh
+
+networks:
+  rwe_network:
+    driver: bridge
