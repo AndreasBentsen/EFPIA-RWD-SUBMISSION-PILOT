@@ -1,0 +1,77 @@
+[2021-09-13 16:36:21]CMS_ETL starting
+[2021-09-13 16:36:21]BASE_SYNPUF_INPUT_DIRECTORY     =D:\CygwinHome\admin_mschuemi\scripts\files
+[2021-09-13 16:36:21]BASE_OUTPUT_DIRECTORY           =D:\Synpuf\EtlOutput
+[2021-09-13 16:36:21]BASE_ETL_CONTROL_DIRECTORY      =D:\Synpuf\EtlControl
+[2021-09-13 16:37:10]--Table_ID_Values loaded:
+[2021-09-13 16:37:10]	last_condition_occurrence_id 	: 242379754
+[2021-09-13 16:37:10]	last_device_cost_id 	: 1
+[2021-09-13 16:37:10]	last_device_exposure_id 	: 4215776
+[2021-09-13 16:37:10]	last_drug_cost_id 	: 88862936
+[2021-09-13 16:37:10]	last_drug_exposure_id 	: 100808396
+[2021-09-13 16:37:10]	last_location_id 	: 3186
+[2021-09-13 16:37:10]	last_measurement_id 	: 55430170
+[2021-09-13 16:37:10]	last_observation_id 	: 31607711
+[2021-09-13 16:37:10]	last_observation_period_id 	: 1678714
+[2021-09-13 16:37:10]	last_payer_plan_period_id 	: 6231442
+[2021-09-13 16:37:10]	last_person_id 	: 1861568
+[2021-09-13 16:37:10]	last_procedure_cost_id 	: 504295673
+[2021-09-13 16:37:10]	last_procedure_occurrence_id 	: 220296741
+[2021-09-13 16:37:10]	last_specimen_id 	: 1
+[2021-09-13 16:37:10]	last_visit_cost_id 	: 1
+[2021-09-13 16:37:10]	last_visit_occurrence_id 	: 89296379
+[2021-09-13 16:37:10]	last_care_site_id 	: 317929
+[2021-09-13 16:37:10]	last_provider_id 	: 896317
+[2021-09-13 16:37:10]--------------------------------------------------------------------------------
+[2021-09-13 16:37:10]build_maps starting...
+[2021-09-13 16:37:10]reading existing location_dict_file ->D:\Synpuf\EtlControl/location_dictionary.txt
+[2021-09-13 16:37:10]done, recs_in=3185, len person_location_dict=3185
+[2021-09-13 16:37:10]reading existing provider_id_care_site_file ->D:\Synpuf\EtlControl/provider_id_care_site.txt
+[2021-09-13 16:37:11]done, recs_in=317928, len provider_id_care_site_id=317928
+[2021-09-13 16:37:11]reading existing npi_provider_id_file ->D:\Synpuf\EtlControl/npi_provider_id.txt
+[2021-09-13 16:37:15]done, recs_in=896316, len npi_provider_id=40
+[2021-09-13 16:37:15]Reading omop_concept_relationship_file   -> D:\Synpuf\Vocab/CONCEPT_RELATIONSHIP.csv
+[2021-09-13 16:37:15]Writing to log file              -> D:\Synpuf\EtlOutput/concept_relationship_debug_log.txt
+[2021-09-13 16:38:19]Done, omop concept recs_in            = 41328840
+[2021-09-13 16:38:19]recs_skipped                          = 37091547
+[2021-09-13 16:38:19]len source_code_concept_dict           = 0
+[2021-09-13 16:38:19]Reading omop_concept_file        -> D:\Synpuf\Vocab/CONCEPT.csv
+[2021-09-13 16:38:19]Writing to log file              -> D:\Synpuf\EtlOutput/concept_debug_log.txt
+[2021-09-13 16:38:53]Done, omop concept recs_in            = 5718405
+[2021-09-13 16:38:53]recs_checked                          = 1117262
+[2021-09-13 16:38:53]recs_skipped                          = 225496
+[2021-09-13 16:38:53]merged_recs                           = 0
+[2021-09-13 16:38:53]len source_code_concept_dict           = 1113832
+[2021-09-13 16:38:54]--------------------------------------------------------------------------------
+[2021-09-13 16:38:54]reading beneficiary file -> D:\CygwinHome\admin_mschuemi\scripts\files/DE_17/DE1_0_comb_Beneficiary_Summary_File_Sample_17.csv.srt
+[2021-09-13 16:38:54]last_person_id starting value   -> 1861568
+[2021-09-13 17:09:52]last_person_id ending value -> 1977853
+[2021-09-13 17:09:52]Done: total records read =343322, unique IDs=116285
+[2021-09-13 17:09:52]writing  location_dict_file ->D:\Synpuf\EtlControl/location_dictionary.txt
+[2021-09-13 17:09:53]done, recs_out=3185, len person_location_dict=3185
+[2021-09-13 17:09:53]writing  provider_id_care_site_file ->D:\Synpuf\EtlControl/provider_id_care_site.txt
+[2021-09-13 17:09:53]done, recs_out=318686, len provider_id_care_site_id=318686
+[2021-09-13 17:09:53]writing  npi_provider_id_file ->D:\Synpuf\EtlControl/npi_provider_id.txt
+[2021-09-13 17:09:59]done, recs_out=898961, len npi_provider_id=898961
+[2021-09-13 17:09:59]CMS_ETL done
+[2021-09-13 17:09:59]Input Records------
+[2021-09-13 17:09:59]	File: beneficiary                                       , records_read=    343322
+[2021-09-13 17:09:59]	File: carrier                                           , records_read=   9608076
+[2021-09-13 17:09:59]	File: inpatient                                         , records_read=    249273
+[2021-09-13 17:09:59]	File: outpatient                                        , records_read=   1696575
+[2021-09-13 17:10:00]	File: prescription                                      , records_read=  11227940
+[2021-09-13 17:10:00]Output Records------
+[2021-09-13 17:10:00]	File: care_site                                         , records_written=       759
+[2021-09-13 17:10:00]	File: condition_occurrence                              , records_written=  15163938
+[2021-09-13 17:10:00]	File: death                                             , records_written=      5435
+[2021-09-13 17:10:00]	File: device_exposure                                   , records_written=    263476
+[2021-09-13 17:10:00]	File: drug_cost                                         , records_written=   5555829
+[2021-09-13 17:10:00]	File: drug_exposure                                     , records_written=   6302507
+[2021-09-13 17:10:00]	File: measurement_occurrence                            , records_written=   3465562
+[2021-09-13 17:10:00]	File: observation                                       , records_written=   1978397
+[2021-09-13 17:10:00]	File: observation_period                                , records_written=    104927
+[2021-09-13 17:10:00]	File: payer_plan_period                                 , records_written=    389458
+[2021-09-13 17:10:00]	File: person                                            , records_written=    116286
+[2021-09-13 17:10:00]	File: procedure_cost                                    , records_written=  31560288
+[2021-09-13 17:10:00]	File: procedure_occurrence                              , records_written=  13773427
+[2021-09-13 17:10:00]	File: provider                                          , records_written=      2646
+[2021-09-13 17:10:00]	File: visit_occurrence                                  , records_written=   5583315
