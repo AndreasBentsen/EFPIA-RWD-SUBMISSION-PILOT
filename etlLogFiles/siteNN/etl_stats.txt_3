@@ -1,0 +1,78 @@
+[2022-01-04 16:12:31]CMS_ETL starting
+[2022-01-04 16:12:31]BASE_SYNPUF_INPUT_DIRECTORY     =/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_SynPuf
+[2022-01-04 16:12:31]BASE_OUTPUT_DIRECTORY           =/EFPIA-RWD-SUBMISSION-PILOT/Data/Evidera/98_output
+[2022-01-04 16:12:31]BASE_ETL_CONTROL_DIRECTORY      =/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_Control
+[2022-01-04 16:13:26]--Table_ID_Values loaded:
+[2022-01-04 16:13:26]	last_condition_occurrence_id 	: 30307635
+[2022-01-04 16:13:26]	last_device_cost_id 	: 1
+[2022-01-04 16:13:26]	last_device_exposure_id 	: 528742
+[2022-01-04 16:13:26]	last_drug_cost_id 	: 11113576
+[2022-01-04 16:13:26]	last_drug_exposure_id 	: 12612653
+[2022-01-04 16:13:26]	last_location_id 	: 3159
+[2022-01-04 16:13:26]	last_measurement_id 	: 6977269
+[2022-01-04 16:13:26]	last_observation_id 	: 3952938
+[2022-01-04 16:13:26]	last_observation_period_id 	: 209819
+[2022-01-04 16:13:26]	last_payer_plan_period_id 	: 778777
+[2022-01-04 16:13:26]	last_person_id 	: 232748
+[2022-01-04 16:13:26]	last_procedure_cost_id 	: 62993825
+[2022-01-04 16:13:26]	last_procedure_occurrence_id 	: 27536473
+[2022-01-04 16:13:26]	last_specimen_id 	: 1
+[2022-01-04 16:13:26]	last_visit_cost_id 	: 1
+[2022-01-04 16:13:26]	last_visit_occurrence_id 	: 11165056
+[2022-01-04 16:13:26]	last_care_site_id 	: 268158
+[2022-01-04 16:13:26]	last_provider_id 	: 730260
+[2022-01-04 16:13:26]--------------------------------------------------------------------------------
+[2022-01-04 16:13:26]build_maps starting...
+[2022-01-04 16:13:26]reading existing location_dict_file ->/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_Control/location_dictionary.txt
+[2022-01-04 16:13:26]done, recs_in=3158, len person_location_dict=3158
+[2022-01-04 16:13:26]reading existing provider_id_care_site_file ->/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_Control/provider_id_care_site.txt
+[2022-01-04 16:13:26]done, recs_in=268157, len provider_id_care_site_id=268157
+[2022-01-04 16:13:26]reading existing npi_provider_id_file ->/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_Control/npi_provider_id.txt
+[2022-01-04 16:13:28]done, recs_in=730259, len npi_provider_id=70
+[2022-01-04 16:13:28]Reading omop_concept_relationship_file   -> /EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/OMOP/02_Vocabulary/Standard_Vocabulary_v5/CONCEPT_RELATIONSHIP.csv
+[2022-01-04 16:13:28]Writing to log file              -> /EFPIA-RWD-SUBMISSION-PILOT/Data/Evidera/98_output/concept_relationship_debug_log.txt
+[2022-01-04 16:14:29]Done, omop concept recs_in            = 54467466
+[2022-01-04 16:14:29]recs_skipped                          = 48171095
+[2022-01-04 16:14:29]len source_code_concept_dict           = 0
+[2022-01-04 16:14:29]Reading omop_concept_file        -> /EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/OMOP/02_Vocabulary/Standard_Vocabulary_v5/CONCEPT.csv
+[2022-01-04 16:14:29]Writing to log file              -> /EFPIA-RWD-SUBMISSION-PILOT/Data/Evidera/98_output/concept_debug_log.txt
+[2022-01-04 16:14:59]Done, omop concept recs_in            = 8450882
+[2022-01-04 16:14:59]recs_checked                          = 1129765
+[2022-01-04 16:14:59]recs_skipped                          = 225968
+[2022-01-04 16:14:59]merged_recs                           = 0
+[2022-01-04 16:14:59]len source_code_concept_dict           = 1126327
+[2022-01-04 16:14:59]--------------------------------------------------------------------------------
+[2022-01-04 16:14:59]reading beneficiary file -> /EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_SynPuf/DE_3/DE1_0_comb_Beneficiary_Summary_File_Sample_3.csv.srt
+[2022-01-04 16:14:59]last_person_id starting value   -> 232748
+[2022-01-04 16:36:51]last_person_id ending value -> 349138
+[2022-01-04 16:36:51]Done: total records read =343846, unique IDs=116390
+[2022-01-04 16:36:51]writing  location_dict_file ->/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_Control/location_dictionary.txt
+[2022-01-04 16:36:51]done, recs_out=3172, len person_location_dict=3172
+[2022-01-04 16:36:51]writing  provider_id_care_site_file ->/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_Control/provider_id_care_site.txt
+[2022-01-04 16:36:51]done, recs_out=282093, len provider_id_care_site_id=282093
+[2022-01-04 16:36:51]writing  npi_provider_id_file ->/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_Control/npi_provider_id.txt
+[2022-01-04 16:36:52]done, recs_out=775948, len npi_provider_id=775948
+[2022-01-04 16:36:52]CMS_ETL done
+[2022-01-04 16:36:52]Input Records------
+[2022-01-04 16:36:52]	File: beneficiary                                       , records_read=    343846
+[2022-01-04 16:36:52]	File: carrier                                           , records_read=   9607597
+[2022-01-04 16:36:52]	File: inpatient                                         , records_read=    249728
+[2022-01-04 16:36:52]	File: outpatient                                        , records_read=   1701219
+[2022-01-04 16:36:52]	File: prescription                                      , records_read=  11230683
+[2022-01-04 16:36:52]Output Records------
+[2022-01-04 16:36:52]	File: care_site                                         , records_written=     13937
+[2022-01-04 16:36:52]	File: condition_occurrence                              , records_written=  15162964
+[2022-01-04 16:36:52]	File: death                                             , records_written=      5353
+[2022-01-04 16:36:52]	File: device_exposure                                   , records_written=    264040
+[2022-01-04 16:36:52]	File: drug_cost                                         , records_written=   5557148
+[2022-01-04 16:36:52]	File: drug_exposure                                     , records_written=   6304534
+[2022-01-04 16:36:52]	File: location                                          , records_written=        15
+[2022-01-04 16:36:52]	File: measurement_occurrence                            , records_written=   3484721
+[2022-01-04 16:36:52]	File: observation                                       , records_written=   1978294
+[2022-01-04 16:36:52]	File: observation_period                                , records_written=    104940
+[2022-01-04 16:36:52]	File: payer_plan_period                                 , records_written=    389677
+[2022-01-04 16:36:52]	File: person                                            , records_written=    116391
+[2022-01-04 16:36:52]	File: procedure_cost                                    , records_written=  31577160
+[2022-01-04 16:36:52]	File: procedure_occurrence                              , records_written=  13788717
+[2022-01-04 16:36:52]	File: provider                                          , records_written=     45690
+[2022-01-04 16:36:52]	File: visit_occurrence                                  , records_written=   5585326
