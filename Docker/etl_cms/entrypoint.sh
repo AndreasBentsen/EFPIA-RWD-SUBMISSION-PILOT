@@ -29,7 +29,9 @@ unzip /EFPIA-RWD-SUBMISSION-PILOT/vocab.zip -d /EFPIA-RWD-SUBMISSION-PILOT/Data/
 
 # Because CPT4 vocabulary is not part of CONCEPT.csv file, one must download it with the provided cpt4.jar program via: 
 cd /EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/OMOP/02_Vocabulary/Standard_Vocabulary_v5
-java -Dumls-apikey='dcb7040b-aba5-42e5-b1a0-dd3b9d9912a8' -jar cpt4.jar 5
+
+# TODO: Insert dumls key:
+java -Dumls-apikey='xxxx' -jar cpt4.jar 5
 
 # 5. Test ETL with DE_0 CMS test data
 #python CMS_SynPuf_ETL_CDM_v5.py 0
