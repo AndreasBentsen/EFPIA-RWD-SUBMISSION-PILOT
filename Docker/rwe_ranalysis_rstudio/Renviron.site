@@ -1,0 +1,24 @@
+R_LIBS=${R_LIBS-'/usr/local/lib/R/site-library:/usr/local/lib/R/library'}
+CRAN=https://packagemanager.rstudio.com/all/__linux__/focal/latest
+CWD=/
+DEFAULT_USER=rstudio
+HOSTNAME=3f21c003d2d9
+LANG=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+PATH=/usr/lib/rstudio-server/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+R_HOME=/usr/local/lib/R
+R_VERSION=4.1.2
+S6_VERSION=v2.1.0.2
+TERM=xterm
+postgresServer = 172.17.0.2
+postgresDatabase = rwe
+postgresUser = rwe
+postgresPassword = rwe
+postgresPort = 5432
+cdmDatabaseSchema = rwe
+POSTGRES_PATH = /usr/lib/postgresql/12/bin/postgres
+vocabFolder = /EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/OMOP/02_Vocabulary/Standard_Vocabulary_v5
+cdmFolder = /EFPIA-RWD-SUBMISSION-PILOT/Data/Evidera/98_output
+pathToDriver = /jdbc_driver_folder
+TZ=Etc/UTC
+

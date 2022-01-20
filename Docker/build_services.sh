@@ -1,45 +1,84 @@
+#################################################
 # Remove existing containers if they exist
-sudo docker rm rwe_etlcms
-sudo docker rm rwe_postgres
-sudo docker rm rwe_cdmupload
+#################################################
+sudo docker rm -f rwe_etlcms
+sudo docker rm -f rwe_cdmupload
+sudo docker rm -f rwe_ftpfiles
+sudo docker rm -f rwe_postgres
+sudo docker rm -f rwe_qualitydashboard
+sudo docker rm -f rwe_cdmupload
+sudo docker rm -f rwe_r_analysis
 
+#################################################
 # Build images
-cd etl_cms
+#################################################
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_postgresql
+sudo docker build . -t rwe_postgresql
+
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_etlcms
 sudo docker build . -t rwe_etlcms
 
-cd ..
-cd postgresql
-sudo docker build . -t rwe_postgres
-
-cd ..
-cd cdm_upload
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_cdmupload
 sudo docker build . -t rwe_cdmupload
 
-cd ..
-cd r_analysis
-sudo docker build . -t rwe_r_analysis
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_qualitydashboard
+sudo docker build . -t rwe_qualitydashboard
 
-cd ..
-cd cdm_ftpfiles
-sudo docker build . -t rwe_r_ftpfiles
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_ranalysis
+sudo docker build . -t rwe_ranalysis
 
-# 1. Run postgres
-sudo docker run -e POSTGRES_DB=rwe -e POSTGRES_USER=rwe -e POSTGRES_PASSWORD=rwe --name rwe_postgres -v /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_postgres
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_ftpfiles
+sudo docker build . -t rwe_ftpfiles
 
-# 2. Run etl (with volume)
-sudo docker run --name rwe_etlcms -v /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms 
+#################################################
+# Run images
+#################################################
 
-# 3. Cdm Upload through R
-# sudo docker run --name rwe_cdmupload -v /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload 
-sudo docker run -e PASSWORD=rwe --name rwe_cdmupload -p 8787:8787 -v /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload 
+# 1. PostgreSQL 
+# (SynPuf)
+sudo docker run --cpuset-cpus="3-5"  -itd --shm-size=18g -e POSTGRES_DB=rwe -e POSTGRES_USER=rwe -e POSTGRES_PASSWORD=rwe --name rwe_postgresql -v /EFPIA-RWD-SUBMISSION-PILOT/Data/postgresql:/var/lib/postgresql/data -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_postgresql
+# FTP
+sudo docker run -p 5431:5432 --cpuset-cpus="3-5"  -itd --shm-size=18g -e POSTGRES_DB=rwe -e POSTGRES_USER=rwe -e POSTGRES_PASSWORD=rwe --name rwe_postgresql_ftpfiles -v /EFPIA-RWD-SUBMISSION-PILOT/Data/postgresqlftp:/var/lib/postgresql/data -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_postgresql
 
-# 4. R Analysis
-#sudo docker run --name rwe_r_analysis -v /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT -it --entrypoint bash rwe_r_analysis 
-sudo docker run --name rwe_r_analysis -p 8788:8787 -e PASSWORD=rwe -v /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_r_analysis
+# 2. ETL
+#sudo docker run -it --entrypoint /bin/bash --name rwe_etlcms -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms 
+sudo docker run -d --name rwe_etlcms -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms
 
-# 4. R FTP Files
-sudo docker run --name rwe_r_ftpfiles -p 8789:8787 -e PASSWORD=rwe -v /home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_r_ftpfiles
+# 3. UPLOAD
+#sudo docker run -it --entrypoint bash -e PASSWORD=rwe --name rwe_cdmupload -p 8787:8787 -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload
+sudo docker run -d -e PASSWORD=rwe --name rwe_cdmupload -p 8787:8787 -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload
 
+# 4. Quality Dashboard
+sudo docker run --name rwe_qualitydashboard -p 8791:8787 -e PASSWORD=rwe -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_qualitydashboard
+
+# 5. R Analysis
+#sudo docker run --name rwe_ranalysis -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT -it --entrypoint bash rwe_ranalysis 
+
+{
+sudo docker build . -t rwe_ranalysis
+sudo docker run -d --cpuset-cpus="0-2" --name rwe_ranalysis -p 8789:8787 -e PASSWORD=rwe -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT -v /EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO:/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO rwe_ranalysis
+}
+# 5b. R Analysis (RSTUDIO)
+{
+sudo docker stop rwe_ranalysis_rstudio && sudo docker rm rwe_ranalysis_rstudio
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_ranalysis_rstudio
+sudo docker build . -t rwe_ranalysis_rstudio
+sudo docker run -d --name rwe_ranalysis_rstudio -p 8790:8787 -e PASSWORD=rwe -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT -v /EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO:/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO rwe_ranalysis_rstudio
+}
+
+# 6. FTP Files
+{
+sudo docker rm -f rwe_ftpfiles
+cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_ftpfiles
+sudo docker build . -t rwe_ftpfiles
+sudo docker run -d --name rwe_ftpfiles -p 8792:8787 -e PASSWORD=rwe -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_ftpfiles
+}
+
+#################################################
+# Save
+#################################################
+cd..
+sudo docker save rwe_postgres > rwe_postgres.tar
 
 # Docker Compose
 #sudo docker-compose -f docker-compose.yml up

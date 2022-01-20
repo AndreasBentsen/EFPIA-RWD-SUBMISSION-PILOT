@@ -1,3 +1,6 @@
+rm(list=ls())
+#options(java.parameters = c("-XX:+UseConcMarkSweepGC", "-Xmx8g"))
+options(java.parameters = c("-Xms8g","-Xmx8g"))
 if (!require(DatabaseConnector)) install.packages("DatabaseConnector")
 if (!require(SqlRender)) install.packages("SqlRender")
 if (!require(readr)) install.packages("readr")
@@ -18,7 +21,7 @@ connectionDetails <- createConnectionDetails(dbms = "postgresql", pathToDriver=S
 message("Connection Object...")
 
 # Use bulk upload? Will be much faster, but requires POSTGRES_PATH variable set to folder containing pg.exe:
-bulkLoad <- FALSE # need to fix ubuntu postgres TODO
+bulkLoad <- TRUE # need to fix ubuntu postgres TODO
 
 # Schema where the CDM data should be uploaded:
 cdmDatabaseSchema <- Sys.getenv("cdmDatabaseSchema")
@@ -30,7 +33,7 @@ vocabFolder <- Sys.getenv("vocabFolder")
 cdmFolder <- Sys.getenv("cdmFolder")
 
 # Maximum number of rows that will be loaded into memory before writing to the database:
-batchSize <- 1e7
+batchSize <- 2e7
 
 
 
@@ -44,31 +47,36 @@ executeSql(connection, sql)
 sql <- render("SET SEARCH_PATH = @cdm_database_schema;", cdm_database_schema = cdmDatabaseSchema)
 executeSql(connection, sql)
 
-sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/CdmUploadR/OMOP CDM ddl - PostgreSQL.sql")
+sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/src/CdmUploadR/OMOP CDM ddl - PostgreSQL.sql")
 executeSql(connection, sql)
 
 # Load vocabulary ------------------------------------------------------------------
 cdmTables <- tolower(getTableNames(connection, cdmDatabaseSchema))
 
 files <- list.files(vocabFolder, ".csv")
-# file <- files[1]
 for (file in files) {
   table <- gsub(".csv", "", tolower(file))
   if (table %in% cdmTables) {
     message("Uploading ", file, " to table ", table)
     upload <- function(chunk, pos) {
       message("- Uploading rows " , pos, " to ", (pos + nrow(chunk)))
-      dateCols <- grep("_date$", tolower(colnames(chunk)))
-      
+      # The | becomes a quote and consumes all memoryu
+      # 3060788	|Zoledronic acid 800micrograms/mL infusion concentrate 5mL vial	Drug	 
+      dateCols <- grepl("_date$", tolower(colnames(chunk)))
+      dateCols <- tolower(colnames(chunk))[dateCols]
       for (dateCol in dateCols) {
-        if (is.numeric(chunk[, dateCol])) {
-          message(paste0("Converting col ",dateCol))
-          chunk[, dateCol] <- as.Date(as.character(chunk[[dateCol]]), "%Y%m%d")
+        if (is.numeric(chunk[[dateCol]])) {
+          message(paste0("Converting col ",dateCol," to date"))
+          chunk[[dateCol]] <- as.Date(as.character(chunk[[dateCol]]), "%Y%m%d")
         }
       }
       conceptIdCols <- grep("concept_id", tolower(colnames(chunk)))
       for (conceptIdCol in conceptIdCols) {
         chunk[, conceptIdCol] <- as.integer(chunk[[conceptIdCol]])
+      }
+      # Exceptions where bulk loading fails
+      if (table %in% c("drug_strength")) {
+        bulkLoad = FALSE
       }
       # For bulk uploading:
       options(encoding = "UTF-8")
@@ -79,16 +87,39 @@ for (file in files) {
                   dropTableIfExists = FALSE,
                   createTable = FALSE,
                   bulkLoad = bulkLoad)
+      # Enable bulk loading again
+      bulkLoad = TRUE
     }
-    read_delim_chunked(file = file.path(vocabFolder, file), 
-                       callback = upload,
-                       delim = "\t", 
-                       quote = "|", 
-                       na = "",
-                       col_types = cols(),
-                       guess_max = 1e5, 
-                       progress = FALSE,
-                       chunk_size = batchSize)
+
+      read_delim_chunked(file = file.path(vocabFolder, file), 
+                        callback = upload,
+                        delim = "\t", 
+                        #quote = "|", 
+                        quote = "", 
+                        na = "",
+                        col_types = cols(),
+                        guess_max = 1e5, 
+                        progress = FALSE,
+                        chunk_size = batchSize)   
+      # "" replace to null
+      if (table=="concept") {
+        DatabaseConnector::renderTranslateExecuteSql(connection = connection, 
+                                      sql = "UPDATE @cdmDatabaseSchema.concept SET invalid_reason = NULLIF(invalid_reason, '')",
+                                      cdmDatabaseSchema = cdmDatabaseSchema)
+        DatabaseConnector::renderTranslateExecuteSql(connection = connection, 
+                                                     sql = "UPDATE @cdmDatabaseSchema.concept SET standard_concept = NULLIF(standard_concept, '')",
+                                                     cdmDatabaseSchema = cdmDatabaseSchema)
+      } else if (table=="concept_relationship") {
+          DatabaseConnector::renderTranslateExecuteSql(connection = connection, 
+                                        sql = "UPDATE @cdmDatabaseSchema.concept_relationship SET invalid_reason = NULLIF(invalid_reason, '')",
+                                        cdmDatabaseSchema = cdmDatabaseSchema)
+      }    else if (table=="vocabulary") {
+        DatabaseConnector::renderTranslateExecuteSql(connection = connection, 
+                                                     sql = "UPDATE @cdmDatabaseSchema.vocabulary SET vocabulary_version = NULLIF(vocabulary_version, '')",
+                                                     cdmDatabaseSchema = cdmDatabaseSchema)
+      }   
+
+      
   } else {
     message("Skipping file ", file, " because not a CDM table")
   }
@@ -104,6 +135,7 @@ files <- list.files(cdmFolder, ".csv")
 for (file in files) {
   table <- gsub(".[0-9]+.csv", "", tolower(file))
   if (table %in% cdmTables) {
+    gc()
     message("Uploading ", file, " to table ", table)
     cdmFields <- renderTranslateQuerySql(connection, "SELECT TOP 0 * FROM @cdm_database_schema.@table;", cdm_database_schema = cdmDatabaseSchema, table = table)
     cdmFieldNames <- tolower(colnames(cdmFields))
@@ -111,8 +143,30 @@ for (file in files) {
     
     upload <- function(chunk, pos) {
       message("- Uploading rows " , pos, " to ", (pos + nrow(chunk)))
-
-      dateCols <- grep("_date$", tolower(colnames(chunk)))
+      message("Dimensions ",ncol(chunk))
+      message("Size: ",object.size(chunk)/1000000000)
+      # Birth time elements as integer
+      mobCols <- grepl("month_of_birth", tolower(colnames(chunk)))
+      mobCols <- tolower(colnames(chunk))[mobCols]
+      dobCols <- grepl("day_of_birth", tolower(colnames(chunk)))
+      dobCols <- tolower(colnames(chunk))[dobCols]
+      yobCols <- grepl("year_of_birth", tolower(colnames(chunk)))
+      yobCols <- tolower(colnames(chunk))[yobCols]
+      if (length(mobCols)>0) {
+        message(paste0("Converting month of birth"))
+        chunk[[mobCols]] <- as.integer(chunk[[mobCols]])
+      }
+      if (length(dobCols)>0) {
+        message(paste0("Converting day of birth"))
+        chunk[[dobCols]] <- as.integer(chunk[[dobCols]])
+      }
+      if (length(yobCols)>0) {
+        message(paste0("Converting year of birth"))
+        chunk[[yobCols]] <- as.integer(chunk[[yobCols]])
+      }
+      # Date cols
+      dateCols <- grepl("_date$", tolower(colnames(chunk)))
+      dateCols <- tolower(colnames(chunk))[dateCols]
       for (dateCol in dateCols) {
         if (is.numeric(chunk[[dateCol]])) {
           message(paste0("Converting col ",dateCol," to date"))
@@ -145,6 +199,9 @@ for (file in files) {
       if (table == "drug_exposure" && any(is.na(chunk$drug_exposure_end_date))) {
         chunk$drug_exposure_end_date <- chunk$drug_exposure_start_date + ifelse(is.na(chunk$days_supply), 0, chunk$days_supply - 1)
       }
+      
+      # Exceptions where bulk loading fails
+      if (table %in% c("care_site","condition_occurrence","death","device_exposure","drug_exposure","observation","person","procedure_occurrence","provider","visit_occurrence")) {        bulkLoad = FALSE      }
       # For bulk uploading:
       options(encoding = "UTF-8")
       insertTable(connection = connection,
@@ -154,6 +211,8 @@ for (file in files) {
                   dropTableIfExists = FALSE,
                   createTable = FALSE,
                   bulkLoad = bulkLoad)
+      # Enable bulk loading again
+      bulkLoad = TRUE
     }
     
     read_csv_chunked(file = file.path(cdmFolder, file), 
@@ -173,13 +232,13 @@ for (file in files) {
 sql <- render("SET SEARCH_PATH = @cdm_database_schema;", cdm_database_schema = cdmDatabaseSchema)
 executeSql(connection, sql)
 
-sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/CdmUploadR/OMOP CDM constraints - PostgreSQL.sql") # <- errors
+sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/src/CdmUploadR/OMOP CDM constraints - PostgreSQL.sql") # <- errors
 executeSql(connection, sql)
 
-sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/CdmUploadR/OMOP CDM indexes required - PostgreSQL.sql")
+sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/src/CdmUploadR/OMOP CDM indexes required - PostgreSQL.sql")
 executeSql(connection, sql)
 
-sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/CdmUploadR/AdditionalIndexesAndAnalyze.sql")
+sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/src/CdmUploadR/AdditionalIndexesAndAnalyze.sql")
 executeSql(connection, sql)
 
 
@@ -187,10 +246,10 @@ executeSql(connection, sql)
 sql <- render("SET SEARCH_PATH = @cdm_database_schema;", cdm_database_schema = cdmDatabaseSchema)
 executeSql(connection, sql)
 
-sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/CdmUploadR/buildConditionEras.sql")
+sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/src/CdmUploadR/buildConditionEras.sql")
 renderTranslateExecuteSql(connection, sql)
 
-sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/CdmUploadR/buildDrugEras.sql")
+sql <- readSql("/EFPIA-RWD-SUBMISSION-PILOT/src/CdmUploadR/buildDrugEras.sql")
 renderTranslateExecuteSql(connection, sql)
 
 # Populate cdm_source --------------------------------------------------
@@ -199,7 +258,7 @@ vocabularyVersion <- DatabaseConnector::renderTranslateQuerySql(connection = con
                                                                 sql = sql,
                                                                 cdm_database_schema = cdmDatabaseSchema)[1, 1]
 row <- data.frame(cdm_source_name = "Medicare Claims Synthetic Public Use Files (SynPUFs)",
-                  cdm_source_abbreviation = "synPuf",
+                  cdm_source_abbreviation = "rwe",
                   source_description = "Medicare Claims Synthetic Public Use Files (SynPUFs) were created to allow interested parties to gain familiarity using Medicare claims data while protecting beneficiary privacy. These files are intended to promote development of software and applications that utilize files in this format, train researchers on the use and complexities of Centers for Medicare and Medicaid Services (CMS) claims, and support safe data mining innovations. The SynPUFs were created by combining randomized information from multiple unique beneficiaries and changing variable values. This randomization and combining of beneficiary information ensures privacy of health information.",
                   cdm_release_date = Sys.Date(),
                   cdm_version = "5.2.2",
@@ -212,3 +271,5 @@ insertTable(connection = connection,
 
 
 disconnect(connection)
+
+sink()
