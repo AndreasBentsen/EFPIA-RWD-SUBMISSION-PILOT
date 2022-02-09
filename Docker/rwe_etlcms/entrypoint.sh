@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Recipe:
-# https://github.com/OHDSI/ETL-CMS/tree/master/python_etl
-
 # 1. Install required software
 # Python 2.7 with python-dotenv
 cd /EFPIA-RWD-SUBMISSION-PILOT/src/

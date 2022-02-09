@@ -1,15 +1,4 @@
 #################################################
-# Remove existing containers if they exist
-#################################################
-sudo docker rm -f rwe_etlcms
-sudo docker rm -f rwe_cdmupload
-sudo docker rm -f rwe_ftpfiles
-sudo docker rm -f rwe_postgres
-sudo docker rm -f rwe_qualitydashboard
-sudo docker rm -f rwe_cdmupload
-sudo docker rm -f rwe_r_analysis
-
-#################################################
 # Build images
 #################################################
 cd /EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_postgresql
@@ -36,28 +25,54 @@ sudo docker build . -t rwe_ftpfiles
 
 # 1. PostgreSQL 
 # (SynPuf)
-sudo docker run --cpuset-cpus="3-5"  -itd --shm-size=18g -e POSTGRES_DB=rwe -e POSTGRES_USER=rwe -e POSTGRES_PASSWORD=rwe --name rwe_postgresql -v /EFPIA-RWD-SUBMISSION-PILOT/Data/postgresql:/var/lib/postgresql/data -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_postgresql
+{
+sudo docker rm -f rwe_postgresql
+cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_postgresql
+sudo docker build . -t rwe_postgresql
+sudo docker run -itd --shm-size=18g -e POSTGRES_DB=rwe -e POSTGRES_USER=rwe -e POSTGRES_PASSWORD=rwe --name rwe_postgresql -v /EFPIA-RWD-SUBMISSION-PILOT/Data/postgresql:/var/lib/postgresql/data -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_postgresql
+}
+
 # FTP
-sudo docker run -p 5431:5432 --cpuset-cpus="3-5"  -itd --shm-size=18g -e POSTGRES_DB=rwe -e POSTGRES_USER=rwe -e POSTGRES_PASSWORD=rwe --name rwe_postgresql_ftpfiles -v /EFPIA-RWD-SUBMISSION-PILOT/Data/postgresqlftp:/var/lib/postgresql/data -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_postgresql
+{
+sudo docker rm -f rwe_postgresql_ftpfiles
+cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_postgresql_ftpfiles
+sudo docker build . -t rwe_postgresql_ftpfiles
+sudo docker run -p 5431:5432  -itd --shm-size=18g -e POSTGRES_DB=rwe -e POSTGRES_USER=rwe -e POSTGRES_PASSWORD=rwe --name rwe_postgresql_ftpfiles -v /EFPIA-RWD-SUBMISSION-PILOT/Data/postgresqlftp:/var/lib/postgresql/data -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_postgresql
+}
 
 # 2. ETL
-#sudo docker run -it --entrypoint /bin/bash --name rwe_etlcms -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms 
-sudo docker run -d --name rwe_etlcms -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms
+{
+sudo docker rm -f rwe_etlcms
+cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_etlcms
+sudo docker build . -t rwe_etlcms
+sudo docker run -d --name rwe_etlcms -p 8792:8787 -e PASSWORD=rwe -v ~/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms
+}
 
 # 3. UPLOAD
-#sudo docker run -it --entrypoint bash -e PASSWORD=rwe --name rwe_cdmupload -p 8787:8787 -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload
+{
+sudo docker rm -f rwe_cdmupload
+cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_cdmupload
+sudo docker build . -t rwe_cdmupload
 sudo docker run -d -e PASSWORD=rwe --name rwe_cdmupload -p 8787:8787 -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload
+}
 
 # 4. Quality Dashboard
+{
+sudo docker rm -f rwe_qualitydashboard
+cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_qualitydashboard
+sudo docker build . -t rwe_qualitydashboard
 sudo docker run --name rwe_qualitydashboard -p 8791:8787 -e PASSWORD=rwe -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_qualitydashboard
+}
 
 # 5. R Analysis
 #sudo docker run --name rwe_ranalysis -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT -it --entrypoint bash rwe_ranalysis 
-
 {
+sudo docker rm -f rwe_ranalysis
+cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_ranalysis
 sudo docker build . -t rwe_ranalysis
-sudo docker run -d --cpuset-cpus="0-2" --name rwe_ranalysis -p 8789:8787 -e PASSWORD=rwe -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT -v /EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO:/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO rwe_ranalysis
+sudo docker run -d --name rwe_ranalysis -p 8789:8787 -e PASSWORD=rwe -v /EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT -v /EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO:/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS_RSTUDIO rwe_ranalysis
 }
+
 # 5b. R Analysis (RSTUDIO)
 {
 sudo docker stop rwe_ranalysis_rstudio && sudo docker rm rwe_ranalysis_rstudio
