@@ -2,6 +2,7 @@ library(tidyr)
 library(openxlsx)
 options(scipen=999)
 
+# results_dir = "./exportedResults/"
 results_dir = "/EFPIA/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/"
 results_paths = list.files(path = results_dir,recursive = TRUE,full.names = TRUE)
 
@@ -18,3 +19,31 @@ results = do.call("rbind", lapply(results_paths,function(path) {
 })) %>% spread(path,value)
 
 openxlsx::write.xlsx(x = results,file = paste0(results_dir,"comparison_results.xlsx"))
+
+# Find biggest differences between 'FTP runs' -----------------------------------------
+library(dplyr)
+
+# Find any differences
+results <- results %>%
+  rename(valueDkma = `./exportedResults//ResultsDKMA/ResultsDKMA_FTP.zip`,
+         valueJnJ = `./exportedResults//siteJnJ/UsingJnJetlAndRenv.zip`,
+         valueNn = `./exportedResults//siteNN/ResultsNN_FTP.zip`) %>%
+  rowwise() %>%
+  mutate(sd = sd(c(valueDkma, valueJnJ, valueNn))) %>%
+  filter(sd > 0)
+
+# Find differences where standard error is 'small'
+smallSeKey <- results %>%
+  filter(stat == "se_log_rr" & 
+           pmin(valueDkma, valueJnJ, valueNn) < 1) %>%
+  select(target_id, comparator_id, outcome_id, analysis_id)
+
+differencesOfInterest <- results %>%
+  inner_join(smallSeKey, by = c("target_id", "comparator_id", "outcome_id", "analysis_id"))
+
+differencesOfInterest %>%
+  filter(outcome_id <= 22)
+
+
+subset <- results %>%
+  filter(target_id == 2 & comparator_id == 28 & outcome_id == 6 & analysis_id == 1)
