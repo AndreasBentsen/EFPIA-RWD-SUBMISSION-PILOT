@@ -1,6 +1,12 @@
 # EFPIA-RWD-SUBMISSION-PILOT
-# Vocabularies
+# Docker environment
 
+```
+1. Clone this repo to your ~/ directory
+2. Run **/.start.sh** for the interactive menu
+```
+
+# Vocabularies
 
 # Setup virtual python 2.7 environment for conversion of SynPUF data to OMOP on CentOS platform
 

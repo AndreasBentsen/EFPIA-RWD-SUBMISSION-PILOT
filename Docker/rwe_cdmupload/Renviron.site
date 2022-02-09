@@ -10,7 +10,6 @@ R_HOME=/usr/local/lib/R
 R_VERSION=4.1.2
 S6_VERSION=v2.1.0.2
 TERM=xterm
-postgresServer = 172.17.0.4
 postgresDatabase = rwe
 postgresUser = rwe
 postgresPassword = rwe
@@ -21,4 +20,3 @@ vocabFolder = /EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/OMOP/02_Vocabulary/Standard
 cdmFolder = /EFPIA-RWD-SUBMISSION-PILOT/Data/Evidera/98_output
 pathToDriver = /jdbc_driver_folder
 TZ=Etc/UTC
-

@@ -17,4 +17,6 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-k
 RUN apt-get update
 RUN apt-get -y install postgresql postgresql-contrib
 
+#ENV USER="rstudio"
+#CMD ["/usr/lib/rstudio-server/bin/rserver", "--server-daemonize", "0", "--auth-none", "1"]
 ENTRYPOINT [ "/bin/sh","/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_cdmupload/entrypoint.sh" ]

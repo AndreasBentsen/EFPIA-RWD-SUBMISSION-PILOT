@@ -45,7 +45,7 @@ Choose an option:  "
     case $ans in
     1)
         { 
-            sudo docker rm -f rwe_etlcms; cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_etlcms; sudo docker build . -t rwe_etlcms; sudo docker run -d --name rwe_etlcms -p 8792:8787 -e PASSWORD=rwe -v ~/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms 
+            sudo docker rm -f rwe_etlcms; cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_etlcms; sudo docker build . -t rwe_etlcms; sudo docker run -d --name rwe_etlcms -p 8792:8787 -e dumlsapikey=XXXX -e PASSWORD=rwe -v ~/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_etlcms 
             }
         ;;
     2)
@@ -65,7 +65,7 @@ Choose an option:  "
         ;;
     5)
         {
-            sudo docker rm -f rwe_cdmupload; cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_cdmupload; sudo docker build . -t rwe_cdmupload; sudo docker run -d -e POSTGRESQLIP="$(docker inspect rwe_postgresql | grep IPAddress | grep -v null| cut -d '"' -f 4 | head -1)" -e PASSWORD=rwe --name rwe_cdmupload -p 8787:8787 -v ~/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload
+            sudo docker rm -f rwe_cdmupload; cd ~/EFPIA-RWD-SUBMISSION-PILOT/Docker/rwe_cdmupload; sudo docker build . -t rwe_cdmupload; sudo docker run -d -e POSTGRESQLIP="$(sudo docker inspect rwe_postgresql | grep IPAddress | grep -v null| cut -d '"' -f 4 | head -1)" -e PASSWORD=rwe --name rwe_cdmupload -p 8787:8787 -v ~/EFPIA-RWD-SUBMISSION-PILOT:/EFPIA-RWD-SUBMISSION-PILOT rwe_cdmupload
             }
         ;;
     6)
