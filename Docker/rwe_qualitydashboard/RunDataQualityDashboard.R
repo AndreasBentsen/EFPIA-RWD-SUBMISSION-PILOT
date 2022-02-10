@@ -21,7 +21,7 @@ resultsDatabaseSchema <- "ohdsi_results"
 executeDqChecks(connectionDetails = connectionDetails, 
                 cdmDatabaseSchema = cdmDatabaseSchema, 
                 resultsDatabaseSchema = resultsDatabaseSchema,
-                cdmSourceName = "SynPuf", 
+                cdmSourceName = "rwe", 
                 cdmVersion = "5.2.2",
                 outputFolder = outputFolder)
 
