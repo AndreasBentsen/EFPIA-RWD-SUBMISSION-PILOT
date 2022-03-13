@@ -8,14 +8,124 @@ output: html_document
 # Publication - Results
 
 ```{r include=FALSE}
+options(scipen=999)
 library(pacman)
 pacman::p_load(openxlsx,
                dplyr,
                tidyr,
+               glue,
                openxlsx,
                ggplot2)
 ```
 
-##
+## Paths
+
+```{r}
+
+path_exportedResults = "~/EFPIA-RWD-SUBMISSION-PILOT/exportedResults"
+path_dqdJsonFiles = "~/EFPIA-RWD-SUBMISSION-PILOT/dqdJsonFiles"
+path_comparison = "~/EFPIA-RWD-SUBMISSION-PILOT/comparison"
+
+```
+
+### Results Comparison
+
+```{r}
+df_comparison_result = openxlsx::read.xlsx(xlsxFile = glue("{path_comparison}/comparison_results.xlsx"))
+```
+
+#### SE log of RR
+
+```{r}
+
+# Differences in results
+results <- df_comparison_result %>%
+  rename(valueDKMA = `/EFPIA/EFPIA-RWD-SUBMISSION-PILOT/exportedResults//ResultsDKMA/ResultsDKMA_FTP.zip`,
+         valueJNJ = `/EFPIA/EFPIA-RWD-SUBMISSION-PILOT/exportedResults//siteJnJ/UsingJnJetlAndRenv.zip`,
+         valueNN = `/EFPIA/EFPIA-RWD-SUBMISSION-PILOT/exportedResults//siteNN/ResultsNN.zip`) %>%
+  dplyr::select( target_id : stat , valueDKMA , valueJNJ , valueNN ) %>% 
+  filter(stat == "se_log_rr") %>% 
+  gather(site,val,valueDKMA:valueNN) %>% 
+  group_by( target_id , comparator_id , outcome_id , analysis_id , stat ) %>% 
+  dplyr::mutate(sd_=sd(val),
+                mean_=mean(val)) %>% 
+  dplyr::mutate(lwr=mean_-qnorm(p = 0.975)*sd_,
+                upr=mean_+qnorm(p = 0.975)*sd_)
+
+# Visualize
+
+p1 = results %>%
+  dplyr::mutate(site=recode(site, 'valueDKMA' = 'Site 1',   'valueJNJ' = 'Site 2',  'valueNN'='Site 3')) %>% 
+  filter(!is.na(mean_)) %>% 
+  filter(outcome_id <= 22) %>% 
+  unite(target_id,target_id,comparator_id,outcome_id,analysis_id) %>% 
+  arrange(mean_) %>% 
+  dplyr::mutate(target_id=factor(target_id,levels=rev(unique(.$target_id)))) %>% 
+  ggplot(.,aes(x=target_id,y=mean_)) +
+  geom_point(alpha=0.3) +
+  geom_point(aes(y=val,shape=site),alpha=0.3) +
+  coord_flip() +
+  geom_errorbar(aes(ymin=lwr,ymax=upr),alpha=0.3,width=0.3) +
+  labs(title="Fig X: Uniformity of Final Analysis Results Across Sites",
+       x=NULL,
+       y="Log Standard Error Relative Risk (95%CI)") +
+  theme_bw() +
+  theme(legend.position="top")+
+  scale_y_continuous(breaks=c(seq(0,1,by=0.1),seq(1,2.0,by=0.25)),limits=c(0,NA)) +
+  scale_x_discrete(labels=NULL)
+
+p1
+
+ggsave(filename = "p1.png",plot = p1,device = "png",width = 2000,height=2000,units = "px")
+
+```
+
+#### Subject count
+
+```{r eval=F}
+
+# Differences in results
+results <- df_comparison_result %>%
+  rename(valueDKMA = `/EFPIA/EFPIA-RWD-SUBMISSION-PILOT/exportedResults//ResultsDKMA/ResultsDKMA_FTP.zip`,
+         valueJNJ = `/EFPIA/EFPIA-RWD-SUBMISSION-PILOT/exportedResults//siteJnJ/UsingJnJetlAndRenv.zip`,
+         valueNN = `/EFPIA/EFPIA-RWD-SUBMISSION-PILOT/exportedResults//siteNN/ResultsNN.zip`) %>%
+  dplyr::select( target_id : stat , valueDKMA , valueJNJ , valueNN ) %>% 
+  filter(stat %in% c("comparator_subjects","target_subjects","comparator_days","target_days")) %>% 
+  gather(site,val,valueDKMA:valueNN) %>% 
+  separate(stat,into=c("group","statistics")) %>% 
+  dplyr::mutate(val=log10(val))
+
+# Visualize
+
+p2 = results %>%
+  dplyr::mutate(site=recode(site, 'valueDKMA' = 'Site 1',   'valueJNJ' = 'Site 2',  'valueNN'='Site 3')) %>% 
+  # filter(outcome_id <= 22) %>% 
+  unite(target_id,target_id,comparator_id,outcome_id,analysis_id) %>% 
+  spread(statistics,val) %>% 
+  ggplot(.,aes(x=days,y=subjects)) +
+  geom_point(alpha=0.3) +
+  geom_point(aes(y=val,shape=site),alpha=0.3) +
+  coord_flip() +
+  geom_errorbar(aes(ymin=lwr,ymax=upr),alpha=0.3,width=0.3) +
+  labs(title="Fig X: Uniformity of Final Analysis Results Across Sites",
+       x=NULL,
+       y="Log Standard Error Relative Risk (95%CI)") +
+  theme_bw() +
+  theme(legend.position="top")+
+  scale_y_continuous(breaks=c(seq(0,1,by=0.1),seq(1,2.0,by=0.25)),limits=c(0,NA)) +
+  scale_x_discrete(labels=NULL)
+
+p2
+
+ggsave(filename = "p2.png",plot = p2,device = "png",width = 2000,height=2000,units = "px")
 
 
+
+```
+
+### Data Quality Dashboards
+
+```{r eval=F}
+
+path_dqdJsonFiles
+```
