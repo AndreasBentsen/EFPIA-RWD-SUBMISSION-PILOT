@@ -1,0 +1,101 @@
+---
+title: "Publication - Results (DQD)"
+author: "CAKU"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Publication - Results
+
+```{r include=FALSE}
+options(scipen=999)
+library(pacman)
+pacman::p_load(openxlsx,
+               dplyr,
+               data.table,
+               tidyr,
+               rjson,
+               glue,
+               scales,
+               lubridate,
+               openxlsx,
+               ggplot2)
+```
+
+# Paths
+
+```{r}
+
+path_exportedResults = "~/EFPIA-RWD-SUBMISSION-PILOT/exportedResults"
+path_dqdJsonFiles = "~/EFPIA-RWD-SUBMISSION-PILOT/dqdJsonFiles"
+path_comparison = "~/EFPIA-RWD-SUBMISSION-PILOT/comparison"
+
+# Output folders
+path_cms_synpuf="/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_SynPuf"
+path_evidera_output="/EFPIA-RWD-SUBMISSION-PILOT/Data/Evidera/98_output"
+path_vocab="/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/OMOP/02_Vocabulary/Standard_Vocabulary_v5"
+path_logs="/EFPIA-RWD-SUBMISSION-PILOT/logs"
+path_ranalysis="/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS"
+
+```
+
+### Data Quality Dashboards
+
+```{r }
+dqd_files = list.files(path = glue("{path_dqdJsonFiles}"))
+
+df_dqd = rbindlist(lapply(dqd_files,function(dqd_file) {
+  path = glue("{path_dqdJsonFiles}/{dqd_file}")
+  json_data <- fromJSON(file=path)
+  json_dataResults = json_data$CheckResults
+  
+  rbindlist(lapply(seq(length(json_data$CheckResults)),function(result_num) {
+    json_dataResults_example = json_dataResults[[result_num]]
+    tryCatch(expr = {
+      data.frame(CHECK_NUM=result_num,
+                 TABLE_NAME=json_dataResults_example$CDM_TABLE_NAME,
+                 CHECK_NAME=json_dataResults_example$CHECK_NAME,
+                 CHECK_DESCRIPTION=json_dataResults_example$CHECK_DESCRIPTION,
+                 NUM_VIOLATED_ROWS=json_dataResults_example$NUM_VIOLATED_ROWS,
+                 NUM_DENOMINATOR_ROWS=json_dataResults_example$NUM_DENOMINATOR_ROWS,
+                 PCT_VIOLATED_ROWS=json_dataResults_example$PCT_VIOLATED_ROWS)
+    },error=function(e) data.frame())
+  })) %>% 
+    dplyr::mutate(site=dqd_file) %>% 
+    dplyr::relocate(site)
+  
+}))
+
+df_dqd_sd = df_dqd %>% 
+  group_by(CHECK_NUM,CHECK_NAME,CHECK_DESCRIPTION) %>% 
+  dplyr::summarise(sd_=sd(PCT_VIOLATED_ROWS)) %>% 
+  filter(sd_>0) %>% 
+  inner_join(df_dqd) %>% 
+  dplyr::select(CHECK_NUM,CHECK_NAME,CHECK_DESCRIPTION,sd_,site,PCT_VIOLATED_ROWS)
+
+df_dqd_sd %>% 
+  knitr::kable()
+```
+
+
+```{r }
+p4 = df_dqd_sd %>% 
+  dplyr::mutate(PCT_VIOLATED_ROWS=PCT_VIOLATED_ROWS/100) %>% 
+  dplyr::mutate(site=recode(site, 'dqd20.json' = 'Site 1',   'JnJ.json' = 'Site 2',  'NN.json'='Site 3')) %>% 
+  arrange(sd_) %>% 
+  dplyr::mutate(CHECK_NUM=factor(CHECK_NUM,levels=rev(unique(.$CHECK_NUM)))) %>% 
+  ggplot(.,aes(x=PCT_VIOLATED_ROWS,y=CHECK_NUM,shape=site)) +
+  geom_point() +
+  labs(title="Fig X: Uniformity of Data Quality Dashboard Analyses",
+       x="Affected Rows (%)",
+       subtitle="Sorted by SD of all estimates",
+       y="Check #") +
+  theme_bw() +
+  theme(legend.position="top")+
+  scale_x_continuous(limits=c(0,NA),labels=scales::percent_format(accuracy = 0.1))
+
+p4
+
+ggsave(filename = "p4.png",plot = p4,device = "png",width = 2000,height=2000,units = "px")
+
+```
