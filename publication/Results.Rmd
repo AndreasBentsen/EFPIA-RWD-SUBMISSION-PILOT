@@ -333,11 +333,11 @@ results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.nam
 
 results_pm = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
-  unzip(zipfile = path,exdir = tmp_dir)
-  tmp_df = read.csv( list.files(path = tmp_dir, pattern = "propensity_model.csv",recursive = TRUE,full.names = TRUE) )
+  unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
+  tmp_df = read.csv(file = paste0(tmp_dir,"/propensity_model.csv"))
   tmp_df$database_id = NULL
   tmp_df$path = path
-  unlink(tmp_dir, recursive = T)
+  # unlink(tmp_dir, recursive = T)
   return(tmp_df)
 })) %>% 
   dplyr::mutate(path=gsub("/home/oem/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path))
@@ -365,10 +365,60 @@ p3 = results_pm_sd %>%
 
 # p3
 
-ggsave(filename = "p3.png",plot = p3,device = "png",width = 20,height=20)
+ggsave(filename = "p3.png",plot = p3,device = "png",width = 8,height=8)
 
 ```
 
+
+# Propensity Matching
+
+```{r}
+
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE)
+
+results_pm = do.call("rbind", lapply(results_paths,function(path) {
+  tmp_dir = tempdir(check = TRUE)
+  unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
+  tmp_df = read.csv(file = paste0(tmp_dir,"/covariate_balance.csv"))
+  tmp_df$database_id = NULL
+  tmp_df$path = path
+  # unlink(tmp_dir, recursive = T)
+  return(tmp_df)
+})) %>% 
+  dplyr::mutate(path=gsub("/home/oem/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path))
+
+# Find any differences
+results_cb_sd <- results_pm %>%
+  gather(stat,val, target_mean_before,target_mean_after, comparator_mean_before,comparator_mean_after) %>% 
+  group_by(analysis_id,outcome_id,target_id,comparator_id,covariate_id,stat) %>% 
+  summarise(sd = sd(val)) %>%
+  group_by(analysis_id,outcome_id,target_id,comparator_id,covariate_id) %>% 
+  dplyr::mutate(max_sd=max(sd)) %>% 
+  unite(analysis_id,analysis_id,outcome_id,target_id,comparator_id,covariate_id) %>%
+  dplyr::mutate(n_sd=length(unique(analysis_id))) %>% 
+  filter(sd > 0) %>% 
+  dplyr::mutate(n_sd_above_0=length(unique(analysis_id))) %>% 
+  arrange(desc(max_sd)) %>%  
+  dplyr::mutate(analysis_id=factor(analysis_id,levels=rev(unique(.$analysis_id))))
+# Visualize
+
+p5 = results_cb_sd %>%
+  # sample_n(1000) %>% 
+  ggplot(.,aes(x=analysis_id,y=sd,shape=stat)) +
+  geom_point(alpha=0.3) +
+  coord_flip() +
+  labs(title="Fig X: Covariate Balance Uniformity",
+       x=NULL,
+       subtitle=paste0(scales::number(results_cb_sd$n_sd_above_0[1])," / ",scales::number(results_cb_sd$n_sd[1])," (",scales::percent(results_cb_sd$n_sd_above_0[1]/results_cb_sd$n_sd[1]),") with SD > 0"),
+       y="SD") +
+  theme_bw() +
+  theme(legend.position="top",axis.text.y = element_blank())
+
+p5
+
+ggsave(filename = "p5.png",plot = p5, device = "png",width = 8,height=8)
+
+```
 
 
 
