@@ -25,9 +25,9 @@ pacman::p_load(openxlsx,
 
 ```{r}
 
-path_exportedResults = "~/EFPIA-RWD-SUBMISSION-PILOT/exportedResults"
-path_dqdJsonFiles = "~/EFPIA-RWD-SUBMISSION-PILOT/dqdJsonFiles"
-path_comparison = "~/EFPIA-RWD-SUBMISSION-PILOT/comparison"
+path_exportedResults = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults"
+path_dqdJsonFiles = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/dqdJsonFiles"
+path_comparison = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/comparison"
 
 # Output folders
 path_cms_synpuf="/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_SynPuf"
@@ -40,6 +40,8 @@ path_ranalysis="/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS"
 
 # Results
 
+# Cohort Counts and Days
+
 ## Proportion w/ SD > 0 compared to == 0
 
 ```{r}
@@ -48,13 +50,13 @@ results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.nam
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
   unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
-  tmp_df = read.csv(file = paste0(tmp_dir,"/cohort_method_result.csv"))
+  tmp_df = read.csv(file =  list.files(path = tmp_dir,pattern = "cohort_method_result.csv",recursive = T,full.names = T) )
   tmp_df$database_id = NULL
   tmp_df$path = path
-  # unlink(tmp_dir, recursive = T)
+  unlink(tmp_dir, recursive = T)
   return(tmp_df)
 })) %>% 
-  dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
+  dplyr::mutate(path=gsub("/home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
                             "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
                             "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
@@ -64,12 +66,76 @@ results = do.call("rbind", lapply(results_paths,function(path) {
   separate(path,into=c("site","source")) %>% 
   dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3')) %>%  
   gather(stat,val,rr:calibrated_se_log_rr) %>% 
-  na.omit() %>% 
-  filter(stat == "se_log_rr") %>% 
-  group_by( target_id , comparator_id , outcome_id , analysis_id , stat , source ) %>% 
-  dplyr::mutate(sd_=sd(val))
+  na.omit()
 
 p1a = results %>% 
+  filter(stat %in% c("target_subjects","comparator_subjects","target_days","comparator_days")) %>% 
+  group_by( target_id , comparator_id , outcome_id , analysis_id , stat , source ) %>% 
+  dplyr::mutate(sd_=sd(val),
+                mean_=mean(val)) %>% 
+  dplyr::mutate(lwr=mean_-qnorm(p = 0.975)*sd_,
+                upr=mean_+qnorm(p = 0.975)*sd_) %>% 
+  dplyr::select( target_id , comparator_id , outcome_id , analysis_id , stat , source , sd_) %>% 
+  distinct() %>% 
+  dplyr::group_by( stat , source ) %>% 
+  dplyr::summarise(count_zero=sum(sd_==0),
+                   count_above=sum(sd_>0)) %>% 
+  gather(count,val,count_zero,count_above) %>% 
+  dplyr::mutate(count=recode(count,"count_above"="SD > 0","count_zero"="SD = 0")) %>% 
+  dplyr::mutate(stat=recode(stat,
+                             "comparator_subjects"="Comparator Subjects",
+                             "comparator_days"="Comparator Days",
+                             "target_subjects"="Target Subjects",
+                             "target_days"="Target Days")) %>% 
+  ggplot(.,aes(x=stat,y=val,fill=count,group=count))  +
+  geom_bar(stat="identity", width=.5, position = "dodge")  +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=45,hjust=1),
+        legend.position = "top")+
+  # scale_y_continuous(expand=c(0,0.1),limits=c(0,NA)) + 
+  labs(title="Fig X: Cohort Counts and Days with Zero / Above SD",
+       x=NULL,
+       y="Count") +
+  facet_wrap(~source)
+  
+p1a
+
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p1a.png",plot = p1a,device = "png",width = 7,height=7)
+
+```
+
+# Results SE LOG RR
+
+## Proportion w/ SD > 0 compared to == 0
+
+```{r}
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "zip")
+
+results = do.call("rbind", lapply(results_paths,function(path) {
+  tmp_dir = tempdir(check = TRUE)
+  unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
+  tmp_df = read.csv(file =  list.files(path = tmp_dir,pattern = "cohort_method_result.csv",recursive = T,full.names = T) )
+  tmp_df$database_id = NULL
+  tmp_df$path = path
+  unlink(tmp_dir, recursive = T)
+  return(tmp_df)
+})) %>% 
+  dplyr::mutate(path=gsub("/home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
+  dplyr::mutate(path=recode(path,
+                            "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
+                            "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
+                            "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
+                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
+                            "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
+  separate(path,into=c("site","source")) %>% 
+  dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3')) %>%  
+  gather(stat,val,rr:calibrated_se_log_rr) %>% 
+  na.omit() 
+ 
+p2a = results %>% 
+  filter(stat == "se_log_rr") %>% 
+  group_by( target_id , comparator_id , outcome_id , analysis_id , stat , source ) %>% 
+  dplyr::mutate(sd_=sd(val)) %>% 
   dplyr::select( target_id , comparator_id , outcome_id , analysis_id , stat , source , sd_) %>% 
   distinct() %>% 
   dplyr::group_by( stat , source ) %>% 
@@ -80,14 +146,15 @@ p1a = results %>%
   ggplot(.,aes(x=stat,y=val,fill=source,group=source))  +
   geom_bar(stat="identity", width=.5, position = "dodge")  +
   theme_bw() +
+  theme(legend.position="top") +
   scale_y_continuous(expand=c(0,0),limits=c(0,100)) + 
-  labs(title="Fig X: Analyses Count with Zero / Above SD",
+  labs(title="Fig X: Analyses (Log SE RR) Count with SD = 0 / SD > 0",
        x=NULL,
        y="Count")
   
-p1a
+p2a
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p1a.png",plot = p1a,device = "png",width = 7,height=7)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p2a.png",plot = p2a,device = "png",width = 7,height=7)
 
 ```
 
@@ -99,13 +166,13 @@ results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.nam
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
   unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
-  tmp_df = read.csv(file = paste0(tmp_dir,"/cohort_method_result.csv"))
+  tmp_df = read.csv(file =  list.files(path = tmp_dir,pattern = "cohort_method_result.csv",recursive = T,full.names = T) )
   tmp_df$database_id = NULL
   tmp_df$path = path
-  # unlink(tmp_dir, recursive = T)
+  unlink(tmp_dir, recursive = T)
   return(tmp_df)
 })) %>% 
-  dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
+  dplyr::mutate(path=gsub("/home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
                             "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
                             "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
@@ -115,17 +182,16 @@ results = do.call("rbind", lapply(results_paths,function(path) {
   separate(path,into=c("site","source")) %>% 
   dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3')) %>%  
   gather(stat,val,rr:calibrated_se_log_rr) %>% 
-  na.omit() %>% 
+  na.omit() 
+
+p2b = 
+  results %>% 
   filter(stat == "se_log_rr") %>% 
   group_by( target_id , comparator_id , outcome_id , analysis_id , stat , source ) %>% 
   dplyr::mutate(sd_=sd(val),
                 mean_=mean(val)) %>% 
   dplyr::mutate(lwr=mean_-qnorm(p = 0.975)*sd_,
-                upr=mean_+qnorm(p = 0.975)*sd_)
-
-# Visualize
-
-p1b = results %>%
+                upr=mean_+qnorm(p = 0.975)*sd_) %>%
   filter(!is.na(mean_)) %>% 
   filter(outcome_id <= 22) %>% 
   unite(target_id,target_id,comparator_id,outcome_id,analysis_id) %>% 
@@ -136,7 +202,8 @@ p1b = results %>%
   geom_point(aes(y=val,shape=site,group=source,color=source),alpha=0.7,position=position_dodge(width = 1)) +
   geom_errorbar(aes(ymin=lwr,ymax=upr,group=source,color=source),alpha=0.7,width=0.3,position=position_dodge(width = 1)) +
   coord_flip() +
-  labs(title="Fig X: Uniformity of Final Analysis Results Across Sites",
+  labs(title="Fig X: Uniformity of Final Analysis Results Across Sites & Source",
+       subtitle="All Analyses w/ log SE RR SD > 0",
        x=NULL,
        y="Log Standard Error Relative Risk (95%CI)") +
   theme_bw() +
@@ -144,68 +211,11 @@ p1b = results %>%
   scale_y_continuous(breaks=c(seq(0,1,by=0.1),seq(1,2.0,by=0.25)),limits=c(0,NA)) +
   scale_x_discrete(labels=NULL)
 
-p1b
+p2b
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p1b.png",plot = p1b,device = "png",width = 7,height=7)
-
-```
-
-# Cohort Counts and Days
-
-## Proportion w/ SD > 0 compared to == 0
-
-```{r}
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "zip")
-
-results = do.call("rbind", lapply(results_paths,function(path) {
-  tmp_dir = tempdir(check = TRUE)
-  unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
-  tmp_df = read.csv(file = paste0(tmp_dir,"/cohort_method_result.csv"))
-  tmp_df$database_id = NULL
-  tmp_df$path = path
-  # unlink(tmp_dir, recursive = T)
-  return(tmp_df)
-})) %>% 
-  dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
-  dplyr::mutate(path=recode(path,
-                            "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
-                            "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
-                            "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
-                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
-                            "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
-  separate(path,into=c("site","source")) %>% 
-  dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3')) %>%  
-  gather(stat,val,rr:calibrated_se_log_rr) %>% 
-  na.omit() %>% 
-  filter(stat %in% c("target_subjects","comparator_subjects","target_days","comparator_days")) %>% 
-  group_by( target_id , comparator_id , outcome_id , analysis_id , stat , source ) %>% 
-  dplyr::mutate(sd_=sd(val),
-                mean_=mean(val)) %>% 
-  dplyr::mutate(lwr=mean_-qnorm(p = 0.975)*sd_,
-                upr=mean_+qnorm(p = 0.975)*sd_)
-
-p2a = results %>% 
-  dplyr::select( target_id , comparator_id , outcome_id , analysis_id , stat , source , sd_) %>% 
-  distinct() %>% 
-  dplyr::group_by( stat , source ) %>% 
-  dplyr::summarise(count_zero=sum(sd_==0),
-                   count_above=sum(sd_>0)) %>% 
-  gather(stat,val,count_zero,count_above) %>% 
-  dplyr::mutate(stat=recode(stat,"count_above"="SD > 0","count_zero"="SD = 0")) %>% 
-  ggplot(.,aes(x=stat,y=val,fill=source,group=source))  +
-  geom_bar(stat="identity", width=.5, position = "dodge")  +
-  theme_bw() +
-  scale_y_continuous(expand=c(0,0.1),limits=c(0,NA)) + 
-  labs(title="Fig X: Cohort Counts and Days with Zero / Above SD",
-       x=NULL,
-       y="Count")
-  
-p2a
-
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p2a.png",plot = p2a,device = "png",width = 7,height=7)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p2b.png",plot = p2b,device = "png",width = 7,height=7)
 
 ```
-
 
 # Propensity Matching
 
@@ -218,13 +228,13 @@ results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.nam
 results_pm = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
   unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
-  tmp_df = read.csv(file = paste0(tmp_dir,"/propensity_model.csv"))
+  tmp_df = read.csv(file =  list.files(path = tmp_dir,pattern = "propensity_model.csv",recursive = T,full.names = T) )
   tmp_df$database_id = NULL
   tmp_df$path = path
-  # unlink(tmp_dir, recursive = T)
+  unlink(tmp_dir, recursive = T)
   return(tmp_df)
 })) %>% 
-  dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
+  dplyr::mutate(path=gsub("/home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
                             "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
                             "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
@@ -247,18 +257,17 @@ p3a = results_pm %>%
   ggplot(.,aes(x=stat,y=val,fill=source,group=source))  +
   geom_bar(stat="identity", width=.5, position = "dodge")  +
   theme_bw() +
-  scale_y_continuous(expand=c(0,0),limits=c(0,NA)) + 
   labs(title="Fig X: Propensity Score Matching (SD Coefficients)",
        x=NULL,
        y="Count")
 
-# p3
+p3a
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p3a.png",plot = p3a,device = "png",width = 7,height=7)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p3a.png",plot = p3a,device = "png",width = 7,height=7)
 
 ```
 
-# Propensity Matching
+# Covariate Balance
 
 ```{r}
 
@@ -267,13 +276,13 @@ results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.nam
 results_pm = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
   unzip(zipfile = path,exdir = tmp_dir,overwrite = TRUE)
-  tmp_df = read.csv(file = paste0(tmp_dir,"/covariate_balance.csv"))
+  tmp_df = read.csv(file =  list.files(path = tmp_dir,pattern = "covariate_balance.csv",recursive = T,full.names = T) )
   tmp_df$database_id = NULL
   tmp_df$path = path
-  # unlink(tmp_dir, recursive = T)
+  unlink(tmp_dir, recursive = T)
   return(tmp_df)
 })) %>% 
-  dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
+  dplyr::mutate(path=gsub("/home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
                             "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
                             "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
@@ -295,23 +304,32 @@ results_cb_sd <- results_pm %>%
                 count_above=sum(sd>0))
 # Visualize
 
-p5a = results_cb_sd %>%
-  dplyr::select(source,stat,n_sd,n_sd_above_0) %>% 
-  distinct()
-  # sample_n(1000) %>% 
-  ggplot(.,aes(x=analysis_id,y=sd,shape=stat,color=source)) +
-  geom_point(alpha=0.3,color=source) +
-  coord_flip() +
+p4a = results_cb_sd %>%
+  distinct() %>% 
+  group_by(source,stat) %>% 
+  dplyr::summarise(count_zero=sum(sd==0,na.rm=T),
+                count_above=sum(sd>0,na.rm=T)) %>% 
+  dplyr::select(source,stat,count_zero,count_above) %>%  
+  distinct() %>% 
+  gather(count,val,count_zero:count_above) %>% 
+  dplyr::mutate(count=recode(count,'count_above'='SD > 0','count_zero'='SD = 0')) %>% 
+  dplyr::mutate(stat=recode(stat,
+                             "comparator_mean_after"="Comparator Mean (After)",
+                             "comparator_mean_before"="Comparator Mean (Before)",
+                             "target_mean_after"="Target Mean (After)",
+                             "target_mean_before"="Target Mean (Before)")) %>% 
+  ggplot(.,aes(x=stat,y=val,fill=count)) + 
+  geom_bar(stat="identity", width=.5, position = "dodge")  +
   labs(title="Fig X: Covariate Balance Uniformity",
        x=NULL,
-       subtitle=paste0(scales::number(results_cb_sd$n_sd_above_0[1])," / ",scales::number(results_cb_sd$n_sd[1])," (",scales::percent(results_cb_sd$n_sd_above_0[1]/results_cb_sd$n_sd[1]),") with SD > 0"),
        y="SD") +
   theme_bw() +
-  theme(legend.position="top",axis.text.y = element_blank())
+  theme(legend.position="top",axis.text.y = element_blank(),axis.text.x=element_text(angle=45,hjust=1)) +
+  facet_wrap(~source)
 
-p5a
+p4a
 
-ggsave(filename = "p5a.png",plot = p5a, device = "png",width = 8,height=8)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p4a.png",plot = p4a, device = "png",width = 8,height=8)
 
 ```
 
