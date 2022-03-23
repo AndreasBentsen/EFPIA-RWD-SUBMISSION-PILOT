@@ -1,5 +1,5 @@
 ---
-title: "Publication - Results"
+title: "Publication - Results, Thread Fix"
 author: "CAKU"
 date: "`r Sys.Date()`"
 output: html_document
@@ -25,9 +25,9 @@ pacman::p_load(openxlsx,
 
 ```{r}
 
-path_exportedResults = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults"
-path_dqdJsonFiles = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/dqdJsonFiles"
-path_comparison = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/comparison"
+path_exportedResults = "~/EFPIA-RWD-SUBMISSION-PILOT/exportedResults"
+path_dqdJsonFiles = "~/EFPIA-RWD-SUBMISSION-PILOT/dqdJsonFiles"
+path_comparison = "~/EFPIA-RWD-SUBMISSION-PILOT/comparison"
 
 # Output folders
 path_cms_synpuf="/EFPIA-RWD-SUBMISSION-PILOT/Data/OHDSI/CMS_SynPuf"
@@ -45,7 +45,7 @@ path_ranalysis="/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS"
 ## Proportion w/ SD > 0 compared to == 0
 
 ```{r}
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "zip")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
 
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -62,6 +62,8 @@ results = do.call("rbind", lapply(results_paths,function(path) {
                             "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
                             "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
                             "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
+                            "siteJnJ/UsingJnJetlAndRenvThreadFix.zip"="JNJ_FTP",
+                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
                             "siteNN/ResultsNN_FTP.zip"="NN_FTP",
                             "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
   separate(path,into=c("site","source")) %>% 
@@ -109,7 +111,7 @@ p1a = results %>%
   
 p1a
 
-ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p1a.png",plot = p1a,device = "png",width = 7,height=7)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p1a_thread.png",plot = p1a,device = "png",width = 7,height=7)
 
 ```
 
@@ -118,7 +120,7 @@ ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p1a.png",plot = p1a,de
 ## Proportion w/ SD > 0 compared to == 0
 
 ```{r}
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "zip")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
 
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -163,14 +165,14 @@ p2a = results %>%
   
 p2a
 
-ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p2a.png",plot = p2a,device = "png",width = 7,height=7)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p2a_thread.png",plot = p2a,device = "png",width = 7,height=7)
 
 ```
 
 ## Interval of effects observed
 
 ```{r}
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "zip")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
 
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -222,7 +224,7 @@ p2b =
 
 p2b
 
-ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p2b.png",plot = p2b,device = "png",width = 7,height=7)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p2b_thread.png",plot = p2b,device = "png",width = 7,height=7)
 
 ```
 
@@ -232,7 +234,7 @@ ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p2b.png",plot = p2b,de
 
 ```{r}
 
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE)
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
 
 results_pm = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -272,7 +274,7 @@ p3a = results_pm %>%
 
 p3a
 
-ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p3a.png",plot = p3a,device = "png",width = 7,height=7)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p3a_thread.png",plot = p3a,device = "png",width = 7,height=7)
 
 ```
 
@@ -280,7 +282,7 @@ ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p3a.png",plot = p3a,de
 
 ```{r}
 
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "zip")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
 
 results_pm = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -338,7 +340,7 @@ p4a = results_cb_sd %>%
 
 p4a
 
-ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p4a.png",plot = p4a, device = "png",width = 8,height=8)
+ggsave(filename = "~/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/p4a_thread.png",plot = p4a, device = "png",width = 8,height=8)
 
 ```
 
