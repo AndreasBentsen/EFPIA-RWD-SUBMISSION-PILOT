@@ -1,5 +1,5 @@
 ---
-title: "Publication - Results, Thread Fix"
+title: "Publication - Results, Thread Fix, NN Redone Twice"
 author: "CAKU"
 date: "`r Sys.Date()`"
 output: html_document
@@ -45,7 +45,7 @@ path_ranalysis="/EFPIA-RWD-SUBMISSION-PILOT/Output/RANALYSIS"
 ## Proportion w/ SD > 0 compared to == 0
 
 ```{r}
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE)
 
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -59,21 +59,18 @@ results = do.call("rbind", lapply(results_paths,function(path) {
   # dplyr::mutate(path=gsub("/home/oem/Dropbox/R/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
-                            "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
-                            "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
-                            "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
-                            "siteJnJ/UsingJnJetlAndRenvThreadFix.zip"="JNJ_FTP",
-                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
-                            "siteNN/ResultsNNThread.zip"="NN_FTP",
-                            "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
-  separate(path,into=c("site","source")) %>% 
+                            "siteNN/ResultsNNThread.zip"="NN_FTP_Mark1",
+                            "siteNN/ResultsNN_FTP_MARK2.zip"="NN_FTP_Mark2")) %>% 
+  separate(path,into=c("site","source","mark")) %>% 
+  filter(site=="NN") %>%  # only use NN FTP
   dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3')) %>%  
   gather(stat,val,rr:calibrated_se_log_rr) %>% 
   na.omit()
 
-p1a = results %>% 
+p1a =
+  results %>% 
   filter(stat %in% c("target_subjects","comparator_subjects","target_days","comparator_days")) %>% 
-  group_by( target_id , comparator_id , outcome_id , analysis_id , stat , source ) %>% 
+  group_by( target_id , comparator_id , outcome_id , analysis_id , source, site , stat ) %>% 
   dplyr::mutate(sd_=sd(val),
                 mean_=mean(val)) %>% 
   dplyr::mutate(lwr=mean_-qnorm(p = 0.975)*sd_,
@@ -97,13 +94,14 @@ p1a = results %>%
         legend.position = "top")+
   # scale_y_continuous(expand=c(0,0.1),limits=c(0,NA)) + 
   labs(title="Fig X: Cohort Counts and Days with Zero / Above SD",
+       subtitle="Site 3: Two Docker-based Result Analysis Runs",
        x=NULL,
        y="Count") +
   facet_wrap(~source)
   
 p1a
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p1a_thread.png",plot = p1a,device = "png",width = 7,height=7)
+ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/publication/p1a_thread_redone.png",plot = p1a,device = "png",width = 7,height=7)
 
 ```
 
@@ -112,7 +110,7 @@ ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p1a_thread.png",plot = p1a,devic
 ## Proportion w/ SD > 0 compared to == 0
 
 ```{r}
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE)
 
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -125,14 +123,10 @@ results = do.call("rbind", lapply(results_paths,function(path) {
 })) %>% 
   dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
-                            "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
-                            "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
-                            "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
-                            "siteJnJ/UsingJnJetlAndRenvThreadFix.zip"="JNJ_FTP",
-                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
-                            "siteNN/ResultsNNThread.zip"="NN_FTP",
-                            "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
-  separate(path,into=c("site","source")) %>% 
+                            "siteNN/ResultsNNThread.zip"="NN_FTP_Mark1",
+                            "siteNN/ResultsNN_FTP_MARK2.zip"="NN_FTP_Mark2")) %>% 
+  separate(path,into=c("site","source","mark")) %>% 
+  filter(site=="NN") %>%  # only use NN FTP
   dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3')) %>%  
   gather(stat,val,rr:calibrated_se_log_rr) %>% 
   na.omit() 
@@ -159,14 +153,16 @@ p2a = results %>%
   
 p2a
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p2a_thread.png",plot = p2a,device = "png",width = 7,height=7)
+ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/publication/p2a_thread_redone.png",plot = p2a,device = "png",width = 7,height=7)
 
 ```
 
 ## Interval of effects observed
 
-```{r}
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
+No SD > 0
+
+```{r eval=F}
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE)
 
 results = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -179,14 +175,10 @@ results = do.call("rbind", lapply(results_paths,function(path) {
 })) %>% 
   dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>%  
   dplyr::mutate(path=recode(path,
-                            "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
-                            "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
-                            "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
-                            "siteJnJ/UsingJnJetlAndRenvThreadFix.zip"="JNJ_FTP",
-                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
-                            "siteNN/ResultsNNThread.zip"="NN_FTP",
-                            "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
-  separate(path,into=c("site","source")) %>% 
+                            "siteNN/ResultsNNThread.zip"="NN_FTP_Mark1",
+                            "siteNN/ResultsNN_FTP_MARK2.zip"="NN_FTP_Mark2")) %>% 
+  separate(path,into=c("site","source","mark")) %>% 
+  filter(site=="NN") %>%  # only use NN FTP
   dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3')) %>%  
   gather(stat,val,rr:calibrated_se_log_rr) %>% 
   na.omit() 
@@ -195,6 +187,7 @@ p2b =
   results %>% 
   filter(stat == "se_log_rr") %>% 
   group_by( target_id , comparator_id , outcome_id , analysis_id , stat , source ) %>% 
+  arrange( target_id , comparator_id , outcome_id , analysis_id , stat , source, mark )%>% 
   dplyr::mutate(sd_=sd(val),
                 mean_=mean(val)) %>% 
   dplyr::mutate(lwr=mean_-qnorm(p = 0.975)*sd_,
@@ -221,7 +214,7 @@ p2b =
 
 p2b
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p2b_thread.png",plot = p2b,device = "png",width = 7,height=7)
+ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/publication/p2b_thread_redone.png",plot = p2b,device = "png",width = 7,height=7)
 
 ```
 
@@ -231,7 +224,7 @@ ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p2b_thread.png",plot = p2b,devic
 
 ```{r}
 
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE)
 
 results_pm = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -244,18 +237,15 @@ results_pm = do.call("rbind", lapply(results_paths,function(path) {
 })) %>% 
   dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
-                            "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
-                            "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
-                            "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
-                            "siteJnJ/UsingJnJetlAndRenvThreadFix.zip"="JNJ_FTP",
-                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
-                            "siteNN/ResultsNNThread.zip"="NN_FTP",
-                            "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
-  separate(path,into=c("site","source")) %>% 
+                            "siteNN/ResultsNNThread.zip"="NN_FTP_Mark1",
+                            "siteNN/ResultsNN_FTP_MARK2.zip"="NN_FTP_Mark2")) %>% 
+  separate(path,into=c("site","source","mark")) %>% 
+  filter(site=="NN") %>%  # only use NN FTP
   dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3'))
 
 p3a = results_pm %>% 
-  dplyr::select( analysis_id , target_id , comparator_id , covariate_id  , source , site, coefficient) %>% 
+  dplyr::select( analysis_id , target_id , comparator_id , covariate_id  , source , site, mark , coefficient) %>% 
+  arrange( analysis_id , target_id , comparator_id , covariate_id  , source , site, mark ) %>% 
   distinct() %>% 
   dplyr::group_by( analysis_id , target_id , comparator_id , covariate_id ,source  ) %>% 
   dplyr::summarise(sd_=sd(coefficient)) %>% 
@@ -273,7 +263,7 @@ p3a = results_pm %>%
 
 p3a
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p3a_thread.png",plot = p3a,device = "png",width = 7,height=7)
+ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/publication/p3a_thread_redone.png",plot = p3a,device = "png",width = 7,height=7)
 
 ```
 
@@ -281,7 +271,7 @@ ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p3a_thread.png",plot = p3a,devic
 
 ```{r}
 
-results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE,pattern = "Thread")
+results_paths = list.files(path = path_exportedResults,recursive = TRUE,full.names = TRUE)
 
 results_pm = do.call("rbind", lapply(results_paths,function(path) {
   tmp_dir = tempdir(check = TRUE)
@@ -292,22 +282,19 @@ results_pm = do.call("rbind", lapply(results_paths,function(path) {
   unlink(tmp_dir, recursive = T)
   return(tmp_df)
 })) %>% 
-  dplyr::mutate(path=gsub("~/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
+  dplyr::mutate(path=gsub("/home/caku/EFPIA-RWD-SUBMISSION-PILOT/exportedResults/","",path)) %>% 
   dplyr::mutate(path=recode(path,
-                            "ResultsDKMA/ResultsDKMA_FTP.zip"="DKMA_FTP",
-                            "ResultsDKMA/ResultsDKMA.zip"="DKMA_ETL",
-                            "siteJnJ/UsingJnJetlAndRenv.zip"="JNJ_FTP",
-                            "siteJnJ/UsingJnJetlAndRenvThreadFix.zip"="JNJ_FTP",
-                            "siteNN/ResultsNN_FTP.zip"="NN_FTP",
-                            "siteNN/ResultsNNThread.zip"="NN_FTP",
-                            "siteNN/ResultsNN.zip"="NN_ETL")) %>% 
-  separate(path,into=c("site","source")) %>% 
+                            "siteNN/ResultsNNThread.zip"="NN_FTP_Mark1",
+                            "siteNN/ResultsNN_FTP_MARK2.zip"="NN_FTP_Mark2")) %>% 
+  separate(path,into=c("site","source","mark")) %>% 
+  filter(site=="NN") %>%  # only use NN FTP
   dplyr::mutate(site=recode(site, 'DKMA' = 'Site 1',   'JNJ' = 'Site 2',  'NN'='Site 3'))
 
 # Find any differences
 results_cb_sd <- results_pm %>%
   gather(stat,val, target_mean_before,target_mean_after, comparator_mean_before,comparator_mean_after) %>% 
   group_by(analysis_id,outcome_id,target_id,comparator_id,covariate_id,stat,source) %>% 
+  arrange(analysis_id,outcome_id,target_id,comparator_id,covariate_id,stat,source,mark) %>% 
   summarise(sd = sd(val)) %>%
   group_by(analysis_id,outcome_id,target_id,comparator_id,covariate_id,stat) %>% 
   dplyr::mutate(max_sd=max(sd)) %>% 
@@ -341,7 +328,7 @@ p4a = results_cb_sd %>%
 
 p4a
 
-ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/p4a_thread.png",plot = p4a, device = "png",width = 8,height=8)
+ggsave(filename = "~/EFPIA-RWD-SUBMISSION-PILOT/publication/p4a_thread_redone.png",plot = p4a, device = "png",width = 8,height=8)
 
 ```
 
