@@ -58,6 +58,23 @@ different %>%
 # <dbl>
 #   1     9.99e-16
 
+psModelCoef1 <- attr(ps1, "metaData")$psModelCoef
+psModelCoef2 <- attr(ps1, "metaData")$psModelCoef
+
+mergedCoef <- inner_join(
+  tibble(covariateId = names(psModelCoef1),
+         coef1 = psModelCoef1),
+  tibble(covariateId = names(psModelCoef2),
+         coef2 = psModelCoef2),
+  by = "covariateId"
+)
+
+different <- mergedCoef %>%
+  filter(coef1 != coef2)
+
+different %>%
+  mutate(delta = ps1 - ps2) %>%
+  summarise(max(delta))
 
 matched1 <- matchOnPs(ps1)
 matched2 <- matchOnPs(ps2)
