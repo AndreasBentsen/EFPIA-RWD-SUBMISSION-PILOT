@@ -76,6 +76,8 @@ different %>%
   mutate(delta = ps1 - ps2) %>%
   summarise(max(delta))
 
+attr(ps1, "metaData")$psModelPriorVariance - attr(ps2, "metaData")$psModelPriorVariance
+
 matched1 <- matchOnPs(ps1)
 matched2 <- matchOnPs(ps2)
 
@@ -173,3 +175,65 @@ sum(mergedMatched$stratumId1 != mergedMatched$stratumId2)
 # 
 # $longdouble.max.exp
 # [1] 16384
+
+
+
+
+# Reproduce exact regression input:
+
+studyPop <- CohortMethod::createStudyPopulation(cmData1, 
+                                                restrictToCommonPeriod = FALSE,
+                                                removeDuplicateSubjects = "keep all",
+                                                minDaysAtRisk = 1,
+                                                addExposureDaysToStart = FALSE,
+                                                riskWindowStart = 1,
+                                                washoutPeriod = 0,
+                                                censorAtNewRiskWindow = TRUE,
+                                                addExposureDaysToEnd = FALSE,
+                                                priorOutcomeLookback = 30,
+                                                removeSubjectsWithPriorOutcome = TRUE,
+                                                riskWindowEnd = 30,
+                                                firstExposureOnly = FALSE)
+ps3 <- createPs(cohortMethodData = cmData1,
+                population = studyPop,
+                control = createControl(startingVariance = 0.01,
+                                        seed = 1,
+                                        tolerance = 2e-7,
+                                        cvRepetitions = 10,
+                                        resetCoefficients = TRUE,
+                                        threads = 4))
+merged <- inner_join(
+  ps1 %>%
+    select(rowId, ps1 = propensityScore),
+  ps3 %>%
+    select(rowId, ps3 = propensityScore),
+  by = "rowId"
+)
+
+
+different <- merged %>%
+  filter(ps3 != ps3)
+
+different
+
+library(Cyclops)
+outcomes <- readRDS("c:/temp/outcomes.rds")
+covariates <- readRDS("c:/temp/covariates.rds")
+cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "lr")
+fit <- fitCyclopsModel(cyclopsData = cyclopsData, 
+                       prior = createPrior(priorType = "laplace",
+                                           useCrossValidation = TRUE),
+                       control = createControl(startingVariance = 0.01,
+                                               seed = 1,
+                                               tolerance = 2e-7,
+                                               cvRepetitions = 10,
+                                               resetCoefficients = TRUE,
+                                               threads = 4))
+coeffs <- coef(fit)
+ps4 <- predict(fit)
+ps4
+head(ps4)
+head(ps3$propensityScore)
+saveRDS(coeffs, "c:/temp/coeffs.rds")
+saveRDS(ps4, "c:/temp/prediction.rds")
+
